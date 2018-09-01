@@ -1,0 +1,110 @@
+如果用的是ubuntu18就不要安装MySQL5.7，MySQL5.7只是支持到ubuntu17
+阅读了一下MySQL安装指南，发现MySQL5.7版本最高只适配到Ubuntu17.04，而MySQL8.0最高适配
+到Ubuntu18.04。
+So，去http://dev.mysql.com/downloads/repo/apt/.下载一个mysql-apt-config_0.*.****_all.deb，使用
+==============================================
+sudo dpkg -i mysql-apt-config_0.*.****_all.deb
+==============================================
+安装执行，选择MySQL8.0，OK。
+
+使用
+==========================================
+sudo apt install mysql-server
+==========================================
+命令，就会安装MySQL8.0
+
+按此方法会在安装过程中出现如下界面要求用户输入MySQL密码
+
+MySQL8.0采用了新的加密方式，一定要注意，正是因为这个加密方式才导致Ubuntu18.04用设
+置的root密码登录不了MySQL，因为Ubuntu18.04的终端可能有问题，并不支持这个新的加密方式。
+幸好有界面可以让我们选择使用旧版本5.x的加密方式，所以果断选择采用5.x的加密方式。
+最后在终端输入
+================================
+sudo mysql -u root -p
+===============================
+命令并输入密码检查安装成功而且可以看到MySQL版本号为8.0！！
+
+
+****************************************
+
+MySQL8.0设置远程访问权限
+
+1.登录MySQL
+
+mysql -u root -p
+
+输入您的密码
+
+2.选择 mysql 数据库
+
+use mysql;
+如果找不到mysql数据库
+=====================================
+mysql_upgrade -u root -p 
+====================================
+会自动修复
+因为 mysql 数据库中存储了用户信息的 user 表。
+
+3.在 mysql 数据库的 user 表中查看当前 root 用户的相关信息
+select host, user, authentication_string, plugin from user; 
+执行完上面的命令后会显示一个表格
+
+查看表格中 root 用户的 host，默认应该显示的 localhost，只支持本地访问，不允许远程访问。
+
+4.授权 root 用户的所有权限并设置远程访问
+
+CREATE USER 'root'@'%' IDENTIFIED BY '12345';
+GRANT ALL ON *.* TO 'root'@'%';
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '12345';
+GRANT ALL ON 表示所有权限，% 表示通配所有 host，可以访问远程。
+
+5.刷新权限
+
+所有操作后，应执行
+
+flush privileges;
+
+6.查看 root 用户的 host
+
+再次执行步骤 2，你会发现 root 用户的 host 已经变成 %，说明我们的修改已经成功，可以远程访
+
+7.访问数据库
+
+远程访问数据库的可视化工具比较多如：Navicat、SQLyog、MySQL workbench 等，我这里使用 Navicat
+
+输入访问的 host 和密码，报 2059 错误，这是因为 MySql8.0 版本 和 5.0 的加密规则不一样，而现在的可视化工具只支持旧的加密方式。
+
+此问题有两种方法，一种是更新 Navicat 驱动来解决此问题，另一种是将 MySQL 用户登录的加密规则修改为 mysql_native_password，
+第一种方法我试过了没有起作用，我这里采用第二种方法。
+8.修改加密规则
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'password' PASSWORD EXPIRE NEVER; 
+9.更新 root 用户密码
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'password'; 
+10.刷新权限
+FLUSH PRIVILEGES; 
+
+当本地权限无法登陆的时候
+ERROR 1045 (28000): Access denied for user 'myuser'@'localhost' (using password: NO)
+ERROR 1698 (28000): Access denied for user 'root'@'localhost'
+
+This will happen if you try to login in MySQL with:
+mysql -u root
+
+In order to log in you will need to use:
+sudo mysql -u root
+
+Then enter your OS user password and you will be successfully logged in. After this you can reset your root password to nothing by:
+
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';
+
+or set new password by:
+
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '123456';
+
+
+最后说一句真的是坑啊
+
+
+然后就可以用navicat.exe访问了
+
+Xshell不能开启服务
