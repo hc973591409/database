@@ -1,0 +1,110 @@
+外键
+   create table scores( 
+       id int auto_increment primary key, 
+       stuid int, 
+       subid int, 
+       score decimal(5,2), 
+       foreign key(stuid) references student(id), 
+       foreign key(subid) references subjects(id));
+
+保证数据的有效性：
+    外键约束，保证关系字段的有效性
+
+外键级联操作：
+    对关系中主键操作的时候，那么引用他的值应该怎么办
+    这四种都不怎么样
+    1，restict,限制，抛出已成
+    2，cascade 级联，一起删除
+    3，set null 外键设置为null
+    4，no action 什么都不做
+
+    推荐使用逻辑删除，
+
+连接查询：
+    select student.name,subjects.title.score
+    from scores
+    inner join（表名字） student on（关系） score.stuid = student.id
+    innner join（表名字）student on（关系）score.stuid
+ 
+    当我们的结果来源于多张表的时候，就需要连接查询
+    可以把inner 换成left right
+
+    A left join B on ...
+    A 有的，B 没有，也可以显示，以左表数据有准
+
+    A right join B on ...
+    A 有的，B 没有，也可以显示，以右表数据有准
+
+    SELECT
+        student.name AS 姓名,
+        subjects.title AS 科目,
+        scores.score AS 分数
+    FROM
+	    scores
+    INNER JOIN student ON scores.stuid = student.id
+    INNER JOIN subjects ON scores.subid = subjects.id;
+
+练习
+查询学生的姓名、平均分
+    select student.name as 姓名,avg(scores.score) as 平均分
+    from scores
+    inner join student on scores.stuid = student.id
+    group by student.name;
+
+查询男生的姓名、总分
+    select student.name as 姓名,sum(scores.score) as 总分
+    from scores
+    inner join student on scores.stuid = student.id
+    where student.gender = 1
+    group by student.name
+
+查询科目的名称、平均分
+    select subjects.title as 科目,avg(scores.score) as 总分
+    from scores
+    inner join subjects on scores.subid = subjects.id
+    group by subjects.title
+
+查询未删除科目的名称、最高分、平均分
+    select subjects.title as 科目,avg(scores.score) as 总分,max(scores.score) as 最高分,
+    min(scores.score) as 最低分
+    from scores
+    inner join subjects on scores.subid = subjects.id
+    group by subjects.title;
+
+
+自关联：
+    v表中的某一列，关联了这个表中的另外一列，但是它们的业务逻辑含义是
+    不一样的，城市信息的pid引用的是省信息的id在这个表中，结构不变，可
+    以添加区县、乡镇街道、村社区等信息
+    创建areas表的语句如下：
+    create table areas(
+    id int primary key,
+    atitle varchar(20),
+    pid int,
+    foreign key(pid) references areas(id)
+    );
+
+1. 查找所有的省：
+    select * from areas where pid is null;
+
+查询省的名称为“山西省”的所有城市
+    思路：把表as成两个表，一个省表，一个城市表，城市表的pid=省标的id
+    select city.* from areas as city
+    inner join areas as pro on city.pid = pro.id
+    where pro.title = '山西省'; 
+
+查询市的名称为“广州市”的所有区县
+    SELECT xian.*,qu.* FROM areas as xian
+    LEFT JOIN areas as shi on xian.pid = shi.id
+    LEFT JOIN areas as qu on qu.pid = xian.id
+    WHERE shi.title = '广州市';
+
+查询贵州省下所有的市 县
+    SELECT xian.*,qu.* FROM areas as xian
+    LEFT JOIN areas as shi on xian.pid = shi.id
+    LEFT JOIN areas as qu on qu.pid = xian.id
+    WHERE shi.title = '贵州省';
+
+
+
+
